@@ -49,11 +49,11 @@ Test <- function(
 
   test.pred <- matrix(nrow = nrow(dataset$test.df), ncol = meta.len)
 
-  Objective <- function(x) mean(abs(test.data$keff - rowSums(test.pred * x, na.rm = TRUE)))
-
   test.mae <- avg <- nm <- bfgs <- sa <- numeric()
 
   nm.wt <- bfgs.wt <- sa.wt <- list()
+
+  Objective <- function(x) mean(abs(test.data$keff - rowSums(test.pred * x, na.rm = TRUE))) %>% suppressWarnings()
 
   for (i in 1:meta.len) {
 
@@ -61,57 +61,50 @@ Test <- function(
 
     test.mae[i] <- mean(abs(test.data$keff - test.pred[ , i]))
 
-    nm.wt[[i]] <- stats::optim(rep(0, i), Objective, method = 'Nelder-Mead', lower = 0)
-    bfgs.wt[[i]] <- stats::optim(rep(0, i), Objective, method = 'BFGS', lower = 0)
-    sa.wt[[i]] <- stats::optim(rep(0, i), Objective, method = 'SANN', lower = 0)
+    nm.wt[[i]] <- stats::optim(rep(1 / i, i), Objective, method = 'Nelder-Mead') %>% suppressWarnings()
+    bfgs.wt[[i]] <- stats::optim(rep(1 / i, i), Objective, method = 'BFGS')
+    sa.wt[[i]] <- stats::optim(rep(1 / i, i), Objective, method = 'SANN')
 
     avg[i] <- mean(abs(test.data$keff - rowMeans(test.pred, na.rm = TRUE)))
-    nm[i] <- mean(abs(test.data$keff - rowSums(test.pred * nm.wt[[i]][[1]], na.rm = TRUE)))
-    bfgs[i] <- mean(abs(test.data$keff - rowSums(test.pred * bfgs.wt[[i]][[1]], na.rm = TRUE)))
-    sa[i] <- mean(abs(test.data$keff - rowSums(test.pred * sa.wt[[i]][[1]], na.rm = TRUE)))
+    nm[i] <- mean(abs(test.data$keff - rowSums(test.pred * nm.wt[[i]][[1]], na.rm = TRUE))) %>% suppressWarnings()
+    bfgs[i] <- mean(abs(test.data$keff - rowSums(test.pred * bfgs.wt[[i]][[1]], na.rm = TRUE))) %>% suppressWarnings()
+    sa[i] <- mean(abs(test.data$keff - rowSums(test.pred * sa.wt[[i]][[1]], na.rm = TRUE))) %>% suppressWarnings()
 
-    if (i == 1 && verbose == TRUE) {
-      cat('\n', sep = '')
+    if (i == 1) {
       progress.bar <- utils::txtProgressBar(min = 0, max = meta.len, style = 3)
       utils::setTxtProgressBar(progress.bar, i)
-      if (i == meta.len) {
-        cat('\n', sep = '')
-      }
-    } else if (i == meta.len && verbose == TRUE) {
-      utils::setTxtProgressBar(progress.bar, i)
-      cat('\n', sep = '')
-    } else if (verbose == TRUE) {
+    } else {
       utils::setTxtProgressBar(progress.bar, i)
     }
 
   }
 
-  if (verbose == TRUE) close(progress.bar)
+  close(progress.bar)
   
   utils::write.csv(data.frame(avg = avg, nm = nm, bfgs = bfgs, sa = sa), file = paste0(training.dir, '/test-mae.csv'), row.names = FALSE)
 
-  message('Mean Training MAE = ', sprintf('%.6f', mean(training.mae)), '\n', sep = '')
-  message('Mean Cross-Validation MAE = ', sprintf('%.6f', mean(val.mae)), '\n', sep = '')
-  message('Mean Test MAE = ', sprintf('%.6f', mean(test.mae)), '\n\n', sep = '')
-  message('Ensemble Test MAE = ', sprintf('%.6f', avg[meta.len]), '\n', sep = '')
+  message('Mean Training MAE = ', sprintf('%.6f', mean(training.mae)))
+  message('Mean Cross-Validation MAE = ', sprintf('%.6f', mean(val.mae)))
+  message('Mean Test MAE = ', sprintf('%.6f', mean(test.mae)))
+  message('Ensemble Test MAE = ', sprintf('%.6f', avg[meta.len]))
 
   if (nm[meta.len] == bfgs[meta.len] && nm[meta.len] == sa[meta.len]) {
-    msg.str <- ' (Nelder-Mead, BFGS, SA)\n'
+    msg.str <- ' (Nelder-Mead, BFGS, SA)'
   } else if (nm[meta.len] == bfgs[meta.len] && nm[meta.len] < sa[meta.len]) {
-    msg.str <- ' (Nelder-Mead, BFGS)\n'
+    msg.str <- ' (Nelder-Mead, BFGS)'
   } else if (nm[meta.len] == sa[meta.len] && nm[meta.len] < bfgs[meta.len]) {
-    msg.str <- ' (Nelder-Mead, SA)\n'
+    msg.str <- ' (Nelder-Mead, SA)'
   } else if (bfgs[meta.len] == sa[meta.len] && bfgs[meta.len] < nm[meta.len]) {
-    msg.str <- ' (BFGS, SA)\n'
+    msg.str <- ' (BFGS, SA)'
   } else if (nm[meta.len] < bfgs[meta.len] && nm[meta.len] < sa[meta.len]) {
-    msg.str <- ' (Nelder-Mead)\n'
+    msg.str <- ' (Nelder-Mead)'
   } else if (bfgs[meta.len] < nm[meta.len] && bfgs[meta.len] < sa[meta.len]) {
-    msg.str <- ' (BFGS)\n'
+    msg.str <- ' (BFGS)'
   } else if (sa[meta.len] < nm[meta.len] && sa[meta.len] < bfgs[meta.len]) {
-    msg.str <- ' (SA)\n'
+    msg.str <- ' (SA)'
   }
 
-  message('Ensemble Test MAE = ', sprintf('%.6f', nm[meta.len]), msg.str, sep = '')
+  message('Ensemble Test MAE = ', sprintf('%.6f', nm[meta.len]), msg.str)
 
   test.min <- min(c(avg[which.min(avg)], nm[which.min(nm)], bfgs[which.min(bfgs)], sa[which.min(sa)]))
 
@@ -130,30 +123,30 @@ Test <- function(
   if (wt.len < meta.len && wt[1] != 0) {
 
     if (wt.len == 1) {
-      message('-\nTest MAE reaches a local minimum with ', wt.len, ' neural network\n\n', sep = '')
+      message('-\nTest MAE reaches a local minimum with ', wt.len, ' neural network')
     } else {
-      message('-\nTest MAE reaches a local minimum with ', wt.len, ' neural networks\n\n', sep = '')
+      message('-\nTest MAE reaches a local minimum with ', wt.len, ' neural networks')
     }
 
-    message('Ensemble Test MAE = ', sprintf('%.6f', avg[wt.len]), '\n', sep = '')
+    message('Ensemble Test MAE = ', sprintf('%.6f', avg[wt.len]))
 
     if (nm[wt.len] == bfgs[wt.len] && nm[wt.len] == sa[wt.len]) {
-      msg.str <- ' (Nelder-Mead, BFGS, SA)\n'
+      msg.str <- ' (Nelder-Mead, BFGS, SA)'
     } else if (nm[wt.len] == bfgs[wt.len] && nm[wt.len] < sa[wt.len]) {
-      msg.str <- ' (Nelder-Mead, BFGS)\n'
+      msg.str <- ' (Nelder-Mead, BFGS)'
     } else if (nm[wt.len] == sa[wt.len] && nm[wt.len] < bfgs[wt.len]) {
-      msg.str <- ' (Nelder-Mead, SA)\n'
+      msg.str <- ' (Nelder-Mead, SA)'
     } else if (bfgs[wt.len] == sa[wt.len] && bfgs[wt.len] < nm[wt.len]) {
-      msg.str <- ' (BFGS, SA)\n'
+      msg.str <- ' (BFGS, SA)'
     } else if (nm[wt.len] < bfgs[wt.len] && nm[wt.len] < sa[wt.len]) {
-      msg.str <- ' (Nelder-Mead)\n'
+      msg.str <- ' (Nelder-Mead)'
     } else if (bfgs[wt.len] < nm[wt.len] && bfgs[wt.len] < sa[wt.len]) {
-      msg.str <- ' (BFGS)\n'
+      msg.str <- ' (BFGS)'
     } else if (sa[wt.len] < nm[wt.len] && sa[wt.len] < bfgs[wt.len]) {
-      msg.str <- ' (SA)\n'
+      msg.str <- ' (SA)'
     }
 
-    message('Ensemble Test MAE = ', sprintf('%.6f', nm[meta.len]), msg.str, sep = '')
+    message('Ensemble Test MAE = ', sprintf('%.6f', nm[meta.len]), msg.str)
     
   }
 

@@ -5,6 +5,7 @@
 #' This function imports the Tabulate, Scale, Model, Fit, Plot, and Test functions to train an ensemble of deep neural networks to predict keff values.
 #' @param batch.size Batch size
 #' @param code Monte Carlo radiation transport code (e.g., "cog", "mcnp")
+#' @param dataset Training and test data
 #' @param ensemble.size Number of deep neural networks in the ensemble
 #' @param epochs Number of training epochs
 #' @param layers String that defines the deep neural network architecture (e.g., "64-64")
@@ -53,6 +54,7 @@
 NN <- function(
   batch.size = 8192,
   code = 'mcnp',
+  dataset,
   ensemble.size = 5,
   epochs = 1500,
   layers = '8192-256-256-256-256-16',
@@ -63,11 +65,11 @@ NN <- function(
   replot = TRUE,
   verbose = FALSE,
   ext.dir,
-  training.dir) {
+  training.dir = NULL) {
 
   if (!exists('dataset')) dataset <- Tabulate(code, ext.dir)
 
-  if (missing(training.dir)) training.dir <- ext.dir
+  if (is.null(training.dir)) training.dir <- ext.dir
 
   model.dir <- paste0(training.dir, '/model')
   dir.create(model.dir, recursive = TRUE, showWarnings = FALSE)
@@ -85,8 +87,8 @@ NN <- function(
 
   metamodel <- history <- rep(list(0), length(ensemble.size))
 
-  Fit <- function(dataset, model, batch.size, epochs, val.split, verbose, remodel.dir, i) {
-    if (missing(i)) {
+  Fit <- function(dataset, model, batch.size, epochs, val.split, verbose, remodel.dir, i = NULL) {
+    if (is.null(i)) {
       model %>% fit(
         dataset$training.df,
         dataset$training.data$keff,

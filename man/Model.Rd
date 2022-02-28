@@ -33,5 +33,5 @@ Model(
 A deep neural network metamodel of Monte Carlo radiation transport code simulation output
 }
 \description{
-This function builds a deep neural network metamodel.
+This function builds the deep neural network metamodel architecture.
 }

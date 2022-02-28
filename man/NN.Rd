@@ -7,6 +7,7 @@
 NN(
   batch.size = 8192,
   code = "mcnp",
+  dataset,
   ensemble.size = 5,
   epochs = 1500,
   layers = "8192-256-256-256-256-16",
@@ -17,13 +18,15 @@ NN(
   replot = TRUE,
   verbose = FALSE,
   ext.dir,
-  training.dir
+  training.dir = NULL
 )
 }
 \arguments{
 \item{batch.size}{Batch size}
 
 \item{code}{Monte Carlo radiation transport code (e.g., "cog", "mcnp")}
+
+\item{dataset}{Training and test data}
 
 \item{ensemble.size}{Number of deep neural networks in the ensemble}
 

@@ -21,7 +21,7 @@ Plot <- function(
   new.theme <- theme_gray() + theme(axis.text = element_text(color = 'black', size = 11), text = element_text(color = 'black', family = 'serif', size = 11))
   theme_set(new.theme)
 
-  if (missing('history')) {
+  if (is.null(history)) {
     history <- utils::read.csv(paste0(plot.dir, '/', i, '.csv'), header = TRUE)
   } else {
     history <- data.frame(
@@ -40,7 +40,7 @@ Plot <- function(
   guides(color = guide_legend(override.aes = list(linetype = c(1, 1, NA), shape = c(NA, NA, 16)))) +
   scale_color_manual('', breaks = c('training data', 'cross-validation data', 'training minimum'), values = c('black', '#a9a9a9', 'red')) +
   scale_x_continuous(breaks = pretty_breaks()) +
-  scale_y_log10(breaks = c(1e-04, 1e-03, 1e-02, 1e-01), limits = c(1e-04, 1e-01)) +
+  scale_y_log10(breaks = c(1e-04, 1e-03, 1e-02, 1e-01, 1e+00), limits = c(1e-04, 1e+00)) +
   theme(
     legend.position = 'bottom',
     legend.spacing.x = unit(0.2, 'cm'),
@@ -57,6 +57,6 @@ Plot <- function(
     family = 'serif',
     size = 3.5)
 
-  ggsave(paste0(plot.dir, '/', i, '.png'), dpi = 1000, height = 4, width = 6.5) %>% suppressMessages()
+  ggsave(paste0(plot.dir, '/', i, '.png'), dpi = 1000, height = 4, width = 6.5) %>% suppressMessages() %>% suppressWarnings()
 
 }
