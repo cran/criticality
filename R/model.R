@@ -3,20 +3,18 @@
 #' Model Function
 #'
 #' This function builds the deep neural network metamodel architecture.
-#' @param code Monte Carlo radiation transport code (e.g., "cog", "mcnp")
 #' @param dataset Training and test data
 #' @param layers String that defines the deep neural network architecture (e.g., "64-64")
 #' @param loss Loss function
 #' @param opt.alg Optimization algorithm
 #' @param learning.rate Learning rate
 #' @param ext.dir External directory (full path)
-#' @return A deep neural network metamodel of Monte Carlo radiation transport code simulation output
+#' @return A deep neural network metamodel of Monte Carlo radiation transport code simulation data
 #' @export
 #' @import keras
 #' @import magrittr
 
 Model <- function(
-  code = 'mcnp',
   dataset,
   layers = '8192-256-256-256-256-16',
   loss = 'sse',

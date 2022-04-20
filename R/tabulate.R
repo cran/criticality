@@ -27,9 +27,13 @@ Tabulate <- function(
   code = 'mcnp',
   ext.dir) {
 
-  if (file.exists(paste0(ext.dir, '/', code, '-dataset.RData'))) {
+  dataset.rdata <- list.files(path = ext.dir)[grep(paste0(code, '.*RData$'), list.files(path = ext.dir))]
 
-    load(paste0(ext.dir, '/', code, '-dataset.RData'))
+  output.csv <- list.files(path = ext.dir)[grep(paste0(code, '.*csv$'), list.files(path = ext.dir))]
+
+  if (file.exists(paste0(ext.dir, '/', dataset.rdata)) && !identical(dataset.rdata, character(0))) {
+
+    load(paste0(ext.dir, '/', dataset.rdata))
 
   } else {
 
@@ -38,16 +42,22 @@ Tabulate <- function(
   #
   # load output
   #
-    if (file.exists(paste0(ext.dir, '/', code, '-output.csv'))) {
-      output <- utils::read.csv(paste0(ext.dir, '/', code, '-output.csv'), fileEncoding = 'UTF-8-BOM') %>% stats::na.omit()
+    if (file.exists(paste0(ext.dir, '/', output.csv)) && !identical(output.csv, character(0))) {
+      output <- utils::read.csv(paste0(ext.dir, '/', output.csv), fileEncoding = 'UTF-8-BOM') %>% stats::na.omit()
       if (nrow(output) >= length(output.files)) {
         output <- output[sample(nrow(output)), ]
         dataset <- Scale(code = code, output = output, ext.dir = ext.dir)
       } else {
         remove(output)
       }
-      
-    } else {
+    }
+
+  #
+  # tabulate output
+  #
+    if (!exists('output') && length(output.files) == 0) stop('Could not find data', call. = FALSE)
+
+    if (!exists('output')) {
 
       mass <- rad <- thk <- ht <- vol <- conc <- hd <- keff <- sd <- numeric()
       
@@ -121,14 +131,9 @@ Tabulate <- function(
       output <- output[sample(nrow(output)), ]
       utils::write.csv(output, file = paste0(ext.dir, '/', code, '-output.csv'), row.names = FALSE)
       
-      dataset <- Scale(
-        code = code,
-        output = output,
-        ext.dir = ext.dir)
+      dataset <- Scale(code = code, output = output, ext.dir = ext.dir)
 
     } 
-
-    if (!exists('dataset') && length(output.files) == 0) stop('Could not find data')
 
   }
 

@@ -4,12 +4,12 @@
 \alias{BN}
 \title{BN Function}
 \usage{
-BN(facility, dist = "gamma", ext.dir)
+BN(dist = "gamma", facility.data, ext.dir)
 }
 \arguments{
-\item{facility}{Facility name or building number (.csv file name)}
-
 \item{dist}{Truncated probability distribution (e.g., "gamma", "normal")}
+
+\item{facility.data}{.csv file name}
 
 \item{ext.dir}{External directory (full path)}
 }
@@ -30,8 +30,8 @@ file.copy(paste0(extdata, "/facility.csv"), ext.dir, recursive = TRUE)
 file.copy(paste0(extdata, "/mcnp-dataset.RData"), ext.dir, recursive = TRUE)
 
 BN(
-  facility = "facility",
   dist = "gamma",
+  facility.data = "facility.csv",
   ext.dir = ext.dir
 )
 

@@ -13,6 +13,7 @@
 #' @param opt.alg Optimization algorithm
 #' @param learning.rate Learning rate
 #' @param val.split Validation split
+#' @param overwrite Boolean (TRUE/FALSE) that determines if files should be overwritten
 #' @param replot Boolean (TRUE/FALSE) that determines if .png files should be replotted
 #' @param verbose Boolean (TRUE/FALSE) that determines if TensorFlow and Test function output should be displayed
 #' @param ext.dir External directory (full path)
@@ -36,7 +37,7 @@
 #'     code = "mcnp",
 #'     ensemble.size = 1,
 #'     epochs = 10,
-#'     layers = "8192-256-256-256-256-16",
+#'     layers = "256-256-16",
 #'     loss = "sse",
 #'     opt.alg = "adamax",
 #'     learning.rate = 0.00075,
@@ -62,6 +63,7 @@ NN <- function(
   opt.alg = 'adamax',
   learning.rate = 0.00075,
   val.split = 0.2,
+  overwrite = FALSE,
   replot = TRUE,
   verbose = FALSE,
   ext.dir,
@@ -77,8 +79,40 @@ NN <- function(
   remodel.dir <- paste0(training.dir, '/remodel')
   dir.create(remodel.dir, recursive = TRUE, showWarnings = FALSE)
 
+  new.settings <- data.frame(V1 = c(
+    'model settings',
+    paste0('batch size: ', batch.size),
+    paste0('code: ', code),
+    paste0('ensemble size: ', ensemble.size),
+    paste0('epochs: ', epochs),
+    paste0('layers: ', layers),
+    paste0('loss: ', loss),
+    paste0('optimization algorithm: ', opt.alg),
+    paste0('learning rate: ', learning.rate),
+    paste0('validation split: ', val.split),
+    paste0('external directory: ', ext.dir),
+    paste0('training directory: ', training.dir)))
+
   # build custom loss function
   if (loss == 'sse') loss <- SSE <- function(y_true, y_pred) k_sum(k_pow(y_true - y_pred, 2))
+
+  # check metamodel settings
+  if (file.exists(paste0(training.dir, '/model-settings.txt'))) {
+    old.settings <- utils::read.table(paste0(training.dir, '/model-settings.txt'), sep = '\n') %>% as.data.frame()
+    if (!identical(new.settings, old.settings)) {
+      if (overwrite == TRUE) {
+        unlink(model.dir, recursive = TRUE)
+        unlink(remodel.dir, recursive = TRUE)
+        utils::write.table(new.settings, file = paste0(training.dir, '/model-settings.txt'), quote = FALSE, row.names = FALSE, col.names = FALSE)
+        dir.create(model.dir, recursive = TRUE, showWarnings = FALSE)
+        dir.create(remodel.dir, recursive = TRUE, showWarnings = FALSE)
+      } else {
+        stop('Files could not be overwritten', call. = FALSE)
+      }
+    }
+  } else {
+    utils::write.table(new.settings, file = paste0(training.dir, '/model-settings.txt'), quote = FALSE, row.names = FALSE, col.names = FALSE)
+  }
 
 #
 # train metamodel
@@ -111,7 +145,7 @@ NN <- function(
 
   if (length(model.files) < ensemble.size) {
     for (i in (length(model.files) + 1):ensemble.size) {
-      metamodel[[i]] <- Model(code, dataset, layers, loss, opt.alg, learning.rate, ext.dir)
+      metamodel[[i]] <- Model(dataset, layers, loss, opt.alg, learning.rate, ext.dir)
       history[[i]] <- Fit(dataset, metamodel[[i]], batch.size, epochs, val.split, verbose)
       Plot(i = i, history = history[[i]], plot.dir = model.dir)
       save_model_hdf5(metamodel[[i]], paste0(model.dir, '/', i, '.h5'))
@@ -146,7 +180,7 @@ NN <- function(
   }
 
   # set metamodel weights and generate .csv predictions for all training and test data
-  wt <- Test(code, dataset, ensemble.size, loss, verbose, ext.dir, training.dir)
+  wt <- Test(dataset, ensemble.size, loss, verbose, ext.dir, training.dir)
 
   return(list(metamodel, wt))
 
