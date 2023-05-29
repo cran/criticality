@@ -14,7 +14,6 @@
 #' @return A list of Bayesian network samples with predicted keff values
 #' @export
 #' @import bnlearn
-#' @import keras
 #' @import magrittr
 #' @import parallel
 
@@ -119,24 +118,39 @@ Sample <- function(
 # predict keff values
 #
   if (keff.cutoff > 0) {
-    bn.data$keff <- metamodel[[1]][[1]] %>% stats::predict(bn.df)
+
+    bn.data$keff <- metamodel[[1]][[1]] %>% stats::predict(bn.df, verbose = FALSE)
+
+    dec.len <- 0
+
+    while (nrow(subset(bn.data, keff > keff.cutoff)) == 0) {
+      dec.len <- as.character(keff.cutoff) %>% strsplit('[.]') %>% unlist()
+      dec.len <- nchar(dec.len[2])
+      if (is.na(dec.len)) {
+        break
+      } else if (dec.len > 1) {
+        keff.cutoff <- trunc(keff.cutoff * 100) / 100 - 0.01
+      } else {
+        keff.cutoff <- trunc(keff.cutoff * 100) / 100 - 0.1
+      }
+    }
+
     bn.df <- cbind(bn.df, bn.data$keff) %>% subset(bn.data$keff > keff.cutoff)
     bn.df <- bn.df[ , -ncol(bn.df)]
     bn.data <- subset(bn.data, keff > keff.cutoff)
-    if (nrow(bn.data) == 0) {
-      if (is.null(risk.dir)) unlink(risk.dir, recursive = TRUE, force = TRUE)
-      stop(paste0('There were no keff values > ', keff.cutoff))
-    }
+
   }
 
-  if (typeof(metamodel[[2]]) == 'list') {
-    keff <- matrix(nrow = nrow(bn.df), ncol = length(metamodel[[2]][[1]]))
-    for (i in 1:length(metamodel[[2]][[1]])) keff[ , i] <- metamodel[[1]][[i]] %>% stats::predict(bn.df)
-    bn.data$keff <- rowSums(keff * metamodel[[2]][[1]])
-  } else {
-    keff <- matrix(nrow = nrow(bn.df), ncol = length(metamodel[[1]]))
-    for (i in 1:length(metamodel[[1]])) keff[ , i] <- metamodel[[1]][[i]] %>% stats::predict(bn.df)
-    bn.data$keff <- rowMeans(keff)
+  if (nrow(bn.data) > 1) {
+    if (typeof(metamodel[[2]]) == 'list') {
+      keff <- matrix(nrow = nrow(bn.df), ncol = length(metamodel[[2]][[1]]))
+      for (i in 1:length(metamodel[[2]][[1]])) keff[ , i] <- metamodel[[1]][[i]] %>% stats::predict(bn.df, verbose = FALSE)
+      bn.data$keff <- rowSums(keff * metamodel[[2]][[1]])
+    } else {
+      keff <- matrix(nrow = nrow(bn.df), ncol = length(metamodel[[1]]))
+      for (i in 1:length(metamodel[[1]])) keff[ , i] <- metamodel[[1]][[i]] %>% stats::predict(bn.df, verbose = FALSE)
+      bn.data$keff <- rowMeans(keff)
+    }
   }
 
   return(bn.data)

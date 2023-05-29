@@ -16,6 +16,7 @@ NN(
   learning.rate = 0.00075,
   val.split = 0.2,
   overwrite = FALSE,
+  remodel = FALSE,
   replot = TRUE,
   verbose = FALSE,
   ext.dir,
@@ -45,9 +46,11 @@ NN(
 
 \item{overwrite}{Boolean (TRUE/FALSE) that determines if files should be overwritten}
 
+\item{remodel}{Boolean (TRUE/FALSE) that determines if an existing metamodel should be reused}
+
 \item{replot}{Boolean (TRUE/FALSE) that determines if .png files should be replotted}
 
-\item{verbose}{Boolean (TRUE/FALSE) that determines if TensorFlow and Test function output should be displayed}
+\item{verbose}{Boolean (TRUE/FALSE) that determines if TensorFlow and Fit function output should be displayed}
 
 \item{ext.dir}{External directory (full path)}
 
@@ -57,7 +60,7 @@ NN(
 A list of lists containing an ensemble of deep neural networks and weights
 }
 \description{
-This function imports the Tabulate, Scale, Model, Fit, Plot, and Test functions to train an ensemble of deep neural networks to predict keff values.
+This function trains an ensemble of deep neural networks to predict keff values (imports Tabulate, Scale, Model, Fit, Plot, and Test functions).
 }
 \examples{
 
@@ -73,16 +76,11 @@ try(config <- reticulate::py_config()$available)
 try(if (config == TRUE) {
   NN(
     batch.size = 128,
-    code = "mcnp",
     ensemble.size = 1,
     epochs = 10,
     layers = "256-256-16",
     loss = "sse",
-    opt.alg = "adamax",
-    learning.rate = 0.00075,
-    val.split = 0.2,
     replot = FALSE,
-    verbose = FALSE,
     ext.dir = ext.dir
   )
 })

@@ -15,7 +15,8 @@ Risk(
   risk.pool = 100,
   sample.size = 1e+09,
   usl = 0.95,
-  ext.dir
+  ext.dir,
+  training.dir = NULL
 )
 }
 \arguments{
@@ -40,12 +41,14 @@ Risk(
 \item{usl}{Upper subcritical limit (e.g., keff >= 0.95)}
 
 \item{ext.dir}{External directory (full path)}
+
+\item{training.dir}{Training directory (full path)}
 }
 \value{
 A list of lists containing process criticality accident risk estimates and Bayesian network samples
 }
 \description{
-This function imports the Sample function and estimates process criticality accident risk.
+This function estimates process criticality accident risk (imports Sample function).
 }
 \examples{
 
@@ -62,30 +65,22 @@ try(if (config == TRUE) {
   Risk(
     bn = BN(
       facility.data = "facility.csv",
-      dist = "gamma",
       ext.dir = ext.dir),
     code = "mcnp",
     cores = 1,
-    dist = "gamma",
     facility.data = "facility.csv",
     keff.cutoff = 0.5,
     metamodel = NN(
       batch.size = 128,
-      code = "mcnp",
       ensemble.size = 1,
       epochs = 10,
-      layers = "8192-256-256-256-256-16",
-      loss = "sse",
-      opt.alg = "adamax",
-      learning.rate = 0.00075,
-      val.split = 0.2,
-      replot = TRUE,
-      verbose = TRUE,
+      layers = "256-256-16",
+      replot = FALSE,
       ext.dir = ext.dir),
     risk.pool = 10,
     sample.size = 1e+04,
-    usl = 0.95,
-    ext.dir = ext.dir
+    ext.dir = ext.dir,
+    training.dir = NULL
   )
 })
 

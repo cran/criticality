@@ -19,10 +19,10 @@ Scale <- function(
   output,
   ext.dir) {
 
-  # set bindings for nonstandard evaluation
-  mass <- rad <- sd <- NULL
+  code <- tolower(code)
 
-  output$shape <- output$ht <- output$hd <- NULL
+  # set bindings for nonstandard evaluation
+  mass <- rad <- sd <- output$shape <- NULL # missing 'output$ht' and 'output$hd'
 
   labels <- names(output)
 
@@ -39,28 +39,27 @@ Scale <- function(
   # nullify one-factor variables and one-hot encode categorical variables
   if (is.null(dataset)) {
     null.output <- Nullify(output, labels)
-    dummy <- dummyVars(~ ., data = null.output, sep = '')
-    training.data <- data.frame(stats::predict(dummy, newdata = null.output))
-    training.data <- filter(training.data, sd < 0.001)
+    dummy <- caret::dummyVars(~ ., data = null.output, sep = '')
+    training.data <- data.frame(stats::predict(dummy, newdata = null.output)) %>% filter(sd < 0.001)
   } else if (ncol(output) == ncol(dataset$output)) {
-    comb.output <- rbind(output, dataset$output)
-    null.output <- Nullify(comb.output, labels)
-    dummy <- dummyVars(~ ., data = null.output, sep = '')
+    combined.output <- rbind(output, dataset$output)
+    null.output <- Nullify(combined.output, labels)
+    dummy <- caret::dummyVars(~ ., data = null.output, sep = '')
     training.data <- data.frame(stats::predict(dummy, newdata = null.output))
-    training.data <- training.data[1:nrow(output), ]
-    training.data <- filter(training.data, sd < 0.001)
+    training.data <- training.data[1:nrow(output), ] %>% filter(sd < 0.001)
   } else {
-    comb.output <- rbind(output, dataset$output[ , 1:(ncol(dataset$output) - 2)])
-    null.output <- Nullify(comb.output, labels)
-    dummy <- dummyVars(~ ., data = null.output, sep = '')
+    combined.output <- rbind(output, dataset$output[ , 1:(ncol(dataset$output) - 2)])
+    null.output <- Nullify(combined.output, labels)
+    dummy <- caret::dummyVars(~ ., data = null.output, sep = '')
     training.data <- data.frame(stats::predict(dummy, newdata = null.output))
     training.data <- training.data[1:nrow(output), ]
   }
 
   # partition data
   if (is.null(dataset)) {
-    test.data <- training.data[sample(nrow(training.data), round(nrow(training.data) * 0.2)), ]
-    training.data <- training.data %>% anti_join(test.data)
+    test.data <- subset(training.data, mass > 200)
+    test.data <- test.data[sample(nrow(test.data), round(nrow(training.data) * 0.2)), ]
+    training.data <- training.data %>% anti_join(test.data) %>% suppressMessages()
   }
 
 #
